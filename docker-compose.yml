@@ -1,0 +1,48 @@
+version: '3.9'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: c-lol-backend
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - JWT_SECRET=c-lol-super-secret-jwt-key-production-change-me
+      - COMPANY_APP_URL=http://localhost:5173
+      - DRIVER_APP_URL=http://localhost:5174
+    volumes:
+      - backend-data:/app/data
+    restart: unless-stopped
+
+  frontend-company:
+    build:
+      context: ./frontend-company
+      dockerfile: Dockerfile
+    container_name: c-lol-company
+    ports:
+      - '5173:80'
+    environment:
+      - VITE_API_URL=http://localhost:3001/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  frontend-driver:
+    build:
+      context: ./frontend-driver
+      dockerfile: Dockerfile
+    container_name: c-lol-driver
+    ports:
+      - '5174:80'
+    environment:
+      - VITE_API_URL=http://localhost:3001/api
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  backend-data:

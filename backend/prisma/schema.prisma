@@ -1,0 +1,304 @@
+// This is the Prisma schema for production PostgreSQL
+// Currently the app uses JSON files for demo purposes
+// To migrate to PostgreSQL: run `npx prisma migrate dev`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  company_admin
+  company_user
+  driver
+}
+
+enum TripStatus {
+  pending
+  assigned
+  driver_notified
+  heading_to_origin
+  arrived_at_origin
+  loading
+  loading_complete
+  in_transit
+  arrived_at_destination
+  unloading
+  delivered
+  completed
+  cancelled
+}
+
+enum VehicleType {
+  truck
+  trailer
+  semi
+}
+
+enum IncidentType {
+  mechanical
+  accident
+  traffic
+  weather
+  documentation
+  other
+}
+
+enum NotificationChannel {
+  whatsapp
+  sms
+  email
+  push
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
+}
+
+model Company {
+  id        String   @id @default(uuid())
+  name      String
+  taxId     String   @unique
+  email     String   @unique
+  phone     String
+  address   String
+  logoUrl   String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  drivers       Driver[]
+  vehicles      Vehicle[]
+  trips         Trip[]
+  notifications Notification[]
+  driverTokens  DriverToken[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole
+  companyId    String
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+}
+
+model Driver {
+  id               String   @id @default(uuid())
+  companyId        String
+  name             String
+  phone            String
+  email            String?
+  nationalId       String
+  licenseNumber    String
+  licenseExpiry    String
+  licenseType      String
+  defaultVehicleId String?
+  photo            String?
+  address          String?
+  emergencyContact String?
+  emergencyPhone   String?
+  active           Boolean  @default(true)
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  company      Company       @relation(fields: [companyId], references: [id])
+  trips        Trip[]
+  locations    GPSLocation[]
+  incidents    Incident[]
+  driverTokens DriverToken[]
+}
+
+model Vehicle {
+  id                    String      @id @default(uuid())
+  companyId             String
+  type                  VehicleType
+  brand                 String
+  model                 String
+  year                  Int
+  plate                 String      @unique
+  vin                   String?
+  color                 String?
+  maxWeightKg           Float
+  maxVolumeM3           Float
+  insuranceCompany      String?
+  insurancePolicyNumber String?
+  insuranceExpiry       String?
+  vtExpiry              String?
+  notes                 String?
+  active                Boolean     @default(true)
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  trips   Trip[]
+}
+
+model Trip {
+  id                       String     @id @default(uuid())
+  companyId                String
+  tripNumber               String
+  contractingCompany       String
+  destinationClient        String
+  origin                   String
+  originAddress            String
+  destination              String
+  destinationAddress       String
+  scheduledDate            String
+  scheduledTime            String
+  driverId                 String?
+  vehicleId                String?
+  trailerId                String?
+  status                   TripStatus @default(pending)
+  observations             String?
+  productsJson             String     @default("[]")
+  totalWeightKg            Float      @default(0)
+  totalVolumeM3            Float      @default(0)
+  cargoValue               Float      @default(0)
+  cargoCurrency            String     @default("ARS")
+  driverToken              String?
+  driverTokenExpiry        String?
+  startedAt                DateTime?
+  arrivedAtOriginAt        DateTime?
+  loadingStartedAt         DateTime?
+  departedAt               DateTime?
+  arrivedAtDestinationAt   DateTime?
+  completedAt              DateTime?
+  estimatedDurationMinutes Int?
+  actualDurationMinutes    Int?
+  distanceKm               Float?
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
+
+  company   Company     @relation(fields: [companyId], references: [id])
+  driver    Driver?     @relation(fields: [driverId], references: [id])
+  vehicle   Vehicle?    @relation(fields: [vehicleId], references: [id])
+  events    TripEvent[]
+  locations GPSLocation[]
+  incidents Incident[]
+  photos    Photo[]
+  signatures Signature[]
+  notifications Notification[]
+  driverTokens  DriverToken[]
+}
+
+model TripEvent {
+  id            String     @id @default(uuid())
+  tripId        String
+  status        TripStatus
+  timestamp     DateTime
+  lat           Float?
+  lng           Float?
+  notes         String?
+  photosJson    String     @default("[]")
+  createdBy     String
+  createdByType String
+
+  trip Trip @relation(fields: [tripId], references: [id])
+}
+
+model GPSLocation {
+  id        String   @id @default(uuid())
+  tripId    String
+  driverId  String
+  lat       Float
+  lng       Float
+  accuracy  Float?
+  speed     Float?
+  heading   Float?
+  timestamp DateTime
+
+  trip   Trip   @relation(fields: [tripId], references: [id])
+  driver Driver @relation(fields: [driverId], references: [id])
+}
+
+model Incident {
+  id            String       @id @default(uuid())
+  tripId        String
+  driverId      String
+  type          IncidentType
+  description   String
+  photosJson    String       @default("[]")
+  lat           Float?
+  lng           Float?
+  resolved      Boolean      @default(false)
+  resolvedAt    DateTime?
+  resolvedNotes String?
+  timestamp     DateTime
+
+  trip   Trip   @relation(fields: [tripId], references: [id])
+  driver Driver @relation(fields: [driverId], references: [id])
+}
+
+model Photo {
+  id             String   @id @default(uuid())
+  tripId         String
+  uploadedBy     String
+  uploadedByType String
+  url            String
+  label          String?
+  timestamp      DateTime
+
+  trip Trip @relation(fields: [tripId], references: [id])
+}
+
+model Signature {
+  id               String   @id @default(uuid())
+  tripId           String
+  signerName       String
+  signerRole       String
+  signatureDataUrl String
+  timestamp        DateTime
+  lat              Float?
+  lng              Float?
+
+  trip Trip @relation(fields: [tripId], references: [id])
+}
+
+model DriverToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  tripId    String
+  driverId  String
+  companyId String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  usedAt    DateTime?
+  active    Boolean  @default(true)
+
+  trip    Trip    @relation(fields: [tripId], references: [id])
+  driver  Driver  @relation(fields: [driverId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
+}
+
+model Notification {
+  id             String              @id @default(uuid())
+  tripId         String?
+  driverId       String?
+  companyId      String
+  channel        NotificationChannel
+  status         NotificationStatus  @default(pending)
+  subject        String?
+  body           String
+  metadataJson   String?
+  sentAt         DateTime?
+  failedAt       DateTime?
+  failureReason  String?
+  createdAt      DateTime            @default(now())
+
+  trip    Trip?    @relation(fields: [tripId], references: [id])
+  company Company  @relation(fields: [companyId], references: [id])
+}

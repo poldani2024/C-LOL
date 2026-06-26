@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop, 'claude/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  typecheck-backend:
+    name: TypeScript Check - Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm run typecheck
+        working-directory: backend
+
+  typecheck-company:
+    name: TypeScript Check - Company Portal
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend-company/package-lock.json
+      - run: npm ci
+        working-directory: frontend-company
+      - run: npm run typecheck
+        working-directory: frontend-company
+
+  typecheck-driver:
+    name: TypeScript Check - Driver PWA
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend-driver/package-lock.json
+      - run: npm ci
+        working-directory: frontend-driver
+      - run: npm run typecheck
+        working-directory: frontend-driver
+
+  build-backend:
+    name: Build - Backend
+    runs-on: ubuntu-latest
+    needs: typecheck-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+        working-directory: backend
+      - run: npm run build
+        working-directory: backend
+
+  build-company:
+    name: Build - Company Portal
+    runs-on: ubuntu-latest
+    needs: typecheck-company
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend-company/package-lock.json
+      - run: npm ci
+        working-directory: frontend-company
+      - run: npm run build
+        working-directory: frontend-company
+
+  build-driver:
+    name: Build - Driver PWA
+    runs-on: ubuntu-latest
+    needs: typecheck-driver
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend-driver/package-lock.json
+      - run: npm ci
+        working-directory: frontend-driver
+      - run: npm run build
+        working-directory: frontend-driver
