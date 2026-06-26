@@ -53,18 +53,27 @@ cd backend
 npm run seed
 ```
 
-**3. Levantar servicios** (en terminales separadas)
+**3. Levantar servicios** (abrir 3 terminales separadas)
 
+Terminal 1 — Backend (puerto 3001):
 ```bash
-# Terminal 1 - Backend API
-cd backend && npm run dev
-
-# Terminal 2 - Portal empresa
-cd frontend-company && npm run dev
-
-# Terminal 3 - PWA conductor
-cd frontend-driver && npm run dev
+cd backend
+npm run dev
 ```
+
+Terminal 2 — Portal empresa (puerto 5173):
+```bash
+cd frontend-company
+npm run dev
+```
+
+Terminal 3 — PWA conductor (puerto 5174):
+```bash
+cd frontend-driver
+npm run dev
+```
+
+> ⚠️ En Windows CMD no escribas nada después de `npm run dev`. El texto `# :5174` es solo un comentario de documentación, no parte del comando.
 
 **URLs:**
 - Portal empresa: http://localhost:5173
